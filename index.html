@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Random Maze Generator</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            text-align: center;
+        }
+
+        h1 {
+            margin: 20px;
+        }
+
+        #gen-maze-btn {
+            margin: 20px;
+            padding: 10px;
+            font-size: large;
+        }
+
+        #maze {
+            display: inline-grid;
+            grid-template-rows: repeat(10, 1fr);
+            grid-template-columns: repeat(10, 1fr);
+            border: solid 2px black;
+            margin: 30px;
+        }
+
+        .cell {
+            height: 50px;
+            width: 50px;
+        }
+
+        .cell.bottom {
+            border-bottom: solid 2px black;
+        }
+
+        .cell.right {
+            border-right: solid 2px black;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Click to generate a new random maze</h1>
+    <button id="gen-maze-btn">Generate Maze</button>
+    <div>
+        <div id="maze"></div>
+    </div>
+
+    <script>
+        const MAZE_HEIGHT = 10;
+        const MAZE_WIDTH = 10;
+
+        const mazeEle = document.getElementById("maze");
+        const genMazeBtnEle = document.getElementById("gen-maze-btn");
+
+        // A maze is a 2d array, with each element of the maze being a row, and each element of a row being a cell.
+        // A cell is an object as follows: { bottom: boolean, right: boolean }
+        // A bottom or right of true means that side of the cell is a wall.
+
+        function makeMaze(height, width) {
+            const maze = [];
+            for (let h = 0; h < height; h++) {
+                const row = [];
+                for (let w = 0; w < width; w++) {
+                    row.push({
+                        bottom: true,
+                        right: true,
+                    });
+                }
+                maze.push(row);
+            }
+
+            let x = 0;
+            let y = 0;
+            let cellsVisited = new Set();
+            const stack = [];
+
+            while (cellsVisited.size < (height * width)) {
+                cellsVisited.add(`${x},${y}`);
+
+                const availNextCells = [];
+                if (x - 1 >= 0 && !cellsVisited.has(`${x - 1},${y}`)) {
+                    availNextCells.push({ x: x - 1, y });
+                }
+                if (x + 1 <= (width - 1) && !cellsVisited.has(`${x + 1},${y}`)) {
+                    availNextCells.push({ x: x + 1, y });
+                }
+                if (y - 1 >= 0 && !cellsVisited.has(`${x},${y - 1}`)) {
+                    availNextCells.push({ x, y: y - 1 });
+                }
+                if (y + 1 <= (height - 1) && !cellsVisited.has(`${x},${y + 1}`)) {
+                    availNextCells.push({ x, y: y + 1 });
+                }
+
+                // if no avail cells, pop the last cell off of the stack and that becomes the new current cell
+                if (availNextCells.length === 0) {
+                    const prevCell = stack.pop();
+                    x = prevCell.x;
+                    y = prevCell.y;
+                    continue;
+                }
+
+                const randIndex = Math.floor(Math.random() * availNextCells.length);
+                const nextX = availNextCells[randIndex].x;
+                const nextY = availNextCells[randIndex].y;
+
+                stack.push({ x, y });
+                if (nextX + 1 === x && nextY === y) {
+                    maze[nextY][nextX].right = false;
+                    x = nextX;
+                }
+                if (nextX - 1 === x && nextY === y) {
+                    maze[y][x].right = false;
+                    x = nextX;
+                }
+                if (nextX === x && nextY + 1 === y) {
+                    maze[nextY][nextX].bottom = false;
+                    y = nextY;
+                }
+                if (nextX === x && nextY - 1 === y) {
+                    maze[y][x].bottom = false;
+                    y = nextY;
+                }
+            }
+
+            return maze;
+        }
+
+        function drawMaze(maze, ele) {
+            for (const row of maze) {
+                for (const cell of row) {
+                    ele.insertAdjacentHTML(
+                        "beforeend",
+                        `<div class="cell ${cell.bottom ? "bottom" : ""} ${cell.right ? "right" : ""}"></div>`,
+                    );
+                }
+            }
+        }
+
+        genMazeBtnEle.addEventListener("click", () => {
+            mazeEle.innerHTML = "";
+            drawMaze(makeMaze(MAZE_HEIGHT, MAZE_WIDTH), mazeEle);
+        });
+
+        drawMaze(makeMaze(MAZE_HEIGHT, MAZE_WIDTH), mazeEle);
+    </script>
+</body>
+
+</html>
